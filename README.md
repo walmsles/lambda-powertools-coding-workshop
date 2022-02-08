@@ -10,6 +10,8 @@ This lab assumes zero knowledge and is a great starting point if you are curious
 - Installing aws-lambda-powertools (for python)
 - Linking the Global AWS Lambda Powertools Layer into your project
 
+The labs presented here will shocwase the core Lambda Powertools utilities: Logger, Tracer, Metrics and Event Source Data Classes.  With these 4 simple additions to your projects you will supercharge your lambda skills and best practice!
+
 ## Lab 1: Cloud9 IDE Setup
 
 This lab will walk through Cloud9 IDE setup and introduce the project and deploy the core "Hello World" API as a starting point.
