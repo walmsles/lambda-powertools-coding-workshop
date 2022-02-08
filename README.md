@@ -19,10 +19,11 @@ This lab will walk through Cloud9 IDE setup and introduce the project and deploy
 	- bootup into the IDE
 2. Create a SAM cli Python REST API project
 	- use the sam wizard: sam init
-		- Choose: 1 Quick Start Templates 
+		- Choose: 1 AWS Quick Start Templates 
 		- Choose: 1 Zip artefact
 		- Runtime: 10 - Python 3.7
 		- name the project: sam-app
+		- Template Selection: Hello World Example
 3. Open terminal: cd sam-app
 4. Build the Project: sam build
 5. Deploy the Project: sam deploy --guided
@@ -32,7 +33,7 @@ This lab will walk through Cloud9 IDE setup and introduce the project and deploy
 
 ## Lab 2: Logging, Tracing and Metrics
 
-In this lab we will introduce each of the core utilities on at a time.  But first we will install the AWS Lambda Powertools and complete the IDE configuration.  The Cloud9 IDE default environment includes Python 3.7 by default and SAM Cli v1.33 so this lab assumes these as a basis and I have adjusted the lab steps to accomodate this environment.
+In this lab we will introduce each of the core utilities one at a time.  But first we will install the AWS Lambda Powertools and complete the IDE configuration.  The Cloud9 IDE default environment includes Python 3.7 by default and SAM Cli v1.33 so this lab assumes these as a basis and I have adjusted the lab steps to accomodate this environment.
 
 ### Part 1: Install Lambda Powertools
 
@@ -43,15 +44,112 @@ $ pip install aws-lambda-powertools
 
 This installs the Lambda Powertools to a local IDE folder: /home/ec2-user/.local/lib/python3.7/site-packages
 
-Before we continue we need to update the IDE PYTHONPATH so Type hinting works - I really struggled to get a good IDE experience Out of the Box here - maybe I could learn something I am a first time Cloud9 user.
+Before we continue we need to update the IDE PYTHONPATH so Type hinting works.  Update the PYTHONPATH to /home/ec2-user/.local/lib/python3.7/site-packages
+
+Now we should have type hints working :-)
+
+#### template.yaml (add Powertools Layer):
+
+```yaml
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-app
+
+  Sample SAM Template for sam-app
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      Layers:
+        - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPython:9
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+
+```         
 
 ### Part 2: [Logger](https://awslabs.github.io/aws-lambda-powertools-python/latest/core/logger/)
 
-Look at the JSON structured opionated logging - Just add the decorator as a starting point.
+Look at the JSON structured opionated logging - Just add the decorator as a starting point - click the title link to view the documentation.
+
+#### hello_world/app.py (add logger):
+
+```python
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.logging import correlation_paths
+
+logger = Logger()
+
+
+logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST)
+def lambda_handler(event, context):
+    return {
+        "statusCode": 200,
+        "body": json.dumps({
+            "message": "hello world"
+        }),
+    }
+```
 
 ### Part 3: [Tracer](https://awslabs.github.io/aws-lambda-powertools-python/latest/core/tracer/)
 
 A look at the Out of the Box Tracer.
+
+#### hello_world/app.py (add Tracer):
+```python
+import json
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.logging import correlation_paths
+from aws_lambda_powertools import Tracer
+
+logger = Logger()
+tracer = Tracer()
+
+logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST)
+def lambda_handler(event, context):
+    
+    return {
+        "statusCode": 200,
+        "body": json.dumps({
+            "message": "hello world"
+        }),
+    }
+
+```
+
+#### template.yaml (activate XRAY):
+
+```yaml
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      Tracing: Active
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api 
+          Properties:
+            Path: /hello
+            Method: get
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: aws_meetup
+```
 
 ### Part 4: [Custom Metrics](https://awslabs.github.io/aws-lambda-powertools-python/latest/core/metrics/)
 
