@@ -87,14 +87,15 @@ Look at the JSON structured opionated logging - Just add the decorator as a star
 #### hello_world/app.py (add logger):
 
 ```python
+import json
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.logging import correlation_paths
 
 logger = Logger()
 
-
-logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST)
+@logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST, log_event=True)
 def lambda_handler(event, context):
+    
     return {
         "statusCode": 200,
         "body": json.dumps({
@@ -117,7 +118,8 @@ from aws_lambda_powertools import Tracer
 logger = Logger()
 tracer = Tracer()
 
-logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST)
+@logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST, log_event=True)
+@tracer.capture_lambda_handler()
 def lambda_handler(event, context):
     
     return {
@@ -126,6 +128,7 @@ def lambda_handler(event, context):
             "message": "hello world"
         }),
     }
+
 
 ```
 
@@ -149,6 +152,31 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: aws_meetup
+```
+
+#### Lets add XRay [Annotations](https://awslabs.github.io/aws-lambda-powertools-python/latest/core/tracer/#annotations-metadata):
+
+
+```python
+import json
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.logging import correlation_paths
+from aws_lambda_powertools import Tracer
+
+logger = Logger()
+tracer = Tracer()
+
+@logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST, log_event=True)
+@tracer.capture_lambda_handler()
+def lambda_handler(event, context):
+    tracer.put_annotation(key="HelloMeetup", value="SUCCESS") 
+    return {
+        "statusCode": 200,
+        "body": json.dumps({
+            "message": "hello world"
+        }),
+    }
+
 ```
 
 ### Part 4: [Custom Metrics](https://awslabs.github.io/aws-lambda-powertools-python/latest/core/metrics/)
