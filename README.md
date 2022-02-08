@@ -192,15 +192,19 @@ from aws_lambda_powertools.logging import correlation_paths
 from aws_lambda_powertools import Tracer
 from aws_lambda_powertools import Metrics
 from aws_lambda_powertools.metrics import MetricUnit
+from aws_lambda_powertools.utilities.data_classes import event_source, APIGatewayProxyEvent
+
+
 
 logger = Logger()
 tracer = Tracer()
-metrics = Metrics()
+metrics = Metrics(namespace="AWSMeetup", service="HelloWorld")
 
 @metrics.log_metrics(capture_cold_start_metric=True)
 @logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST, log_event=True)
 @tracer.capture_lambda_handler()
-def lambda_handler(event, context):
+@event_source(data_class=APIGatewayProxyEvent)
+def lambda_handler(event: APIGatewayProxyEvent, context):
     metrics.add_metric(name="HelloWorld", unit=MetricUnit.Count, value=1)
     tracer.put_annotation(key="HelloMeetup", value="SUCCESS") 
     return {
@@ -232,7 +236,7 @@ from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEvent
 
 logger = Logger()
 tracer = Tracer()
-metrics = Metrics()
+metrics = Metrics(namespace="AWSMeetup", service="HelloWorld")
 
 @metrics.log_metrics(capture_cold_start_metric=True)
 @logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST, log_event=True)
