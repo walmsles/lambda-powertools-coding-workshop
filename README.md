@@ -86,6 +86,8 @@ Look at the JSON structured opionated logging - Just add the decorator as a star
 
 #### hello_world/app.py (add logger):
 
+**Important Note:** We have added `log_event=True` for demonstration purposes - but really you need to think hard on using this flag since some events in real world systems will transport Personally Identifiable Information (PII) so be wary!
+
 ```python
 import json
 from aws_lambda_powertools import Logger
@@ -179,11 +181,110 @@ def lambda_handler(event, context):
 
 ```
 
-### Part 4: [Custom Metrics](https://awslabs.github.io/aws-lambda-powertools-python/latest/core/metrics/)
+### Part 4: [Custom Metrics](https://awslabs.github.io/aws-lambda-powertools-python/latest/core/metrics/#creating-metrics)
 
 Custom metrics are overlooked when it comes to observability - abscence of metrics can indicate a problem that may need to be looked at - I am guilty of not using Custom metrics enough!
 
-## Lab 3: Event handlers: REST API 
+```python
+import json
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.logging import correlation_paths
+from aws_lambda_powertools import Tracer
+from aws_lambda_powertools import Metrics
+from aws_lambda_powertools.metrics import MetricUnit
+
+logger = Logger()
+tracer = Tracer()
+metrics = Metrics()
+
+@metrics.log_metrics(capture_cold_start_metric=True)
+@logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST, log_event=True)
+@tracer.capture_lambda_handler()
+def lambda_handler(event, context):
+    metrics.add_metric(name="HelloWorld", unit=MetricUnit.Count, value=1)
+    tracer.put_annotation(key="HelloMeetup", value="SUCCESS") 
+    return {
+        "statusCode": 200,
+        "body": json.dumps({
+            "message": "hello world"
+        }),
+    }
+
+```
+
+## Lab 3: [Event Source Data Classes](https://awslabs.github.io/aws-lambda-powertools-python/latest/utilities/data_classes/#utilizing-the-data-classes)
+
+Event Source data classes make working with Lambda events really simple.  Lets see how they can work for you to simplify and improve your developer experience.
+
+### Lets add the API Gateway Proxy Data Class:
+
+This is the quick way to use Powertools Data Classes
+
+```python
+import json
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.logging import correlation_paths
+from aws_lambda_powertools import Tracer
+from aws_lambda_powertools import Metrics
+from aws_lambda_powertools.metrics import MetricUnit
+from aws_lambda_powertools.utilities.data_classes import APIGatewayProxyEvent
+
+
+logger = Logger()
+tracer = Tracer()
+metrics = Metrics()
+
+@metrics.log_metrics(capture_cold_start_metric=True)
+@logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST, log_event=True)
+@tracer.capture_lambda_handler()
+def lambda_handler(event, context):
+    event = APIGatewayProxyEvent(event)
+    
+    metrics.add_metric(name="HelloWorld", unit=MetricUnit.Count)
+    tracer.put_annotation(key="HelloMeetup", value="SUCCESS") 
+    return {
+        "statusCode": 200,
+        "body": json.dumps({
+            "message": "hello world"
+        }),
+    }
+```
+
+### Using the Event Source Decorator
+
+With the event source decorator you can have proper typed parameters for your Lambda function.  This makes working with Lambda events super-simple since the IDE will start to offer type hints and work for you.
+
+```python
+import json
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.logging import correlation_paths
+from aws_lambda_powertools import Tracer
+from aws_lambda_powertools import Metrics
+from aws_lambda_powertools.metrics import MetricUnit
+from aws_lambda_powertools.utilities.data_classes import event_source, APIGatewayProxyEvent
+
+logger = Logger()
+tracer = Tracer()
+metrics = Metrics()
+
+@metrics.log_metrics(capture_cold_start_metric=True)
+@logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST, log_event=True)
+@tracer.capture_lambda_handler()
+@event_source(data_class=APIGatewayProxyEvent)
+def lambda_handler(event: APIGatewayProxyEvent, context):
+    metrics.add_metric(name="HelloWorld", unit=MetricUnit.Count)
+    tracer.put_annotation(key="HelloMeetup", value="SUCCESS") 
+    return {
+        "statusCode": 200,
+        "body": json.dumps({
+            "message": "hello world"
+        }),
+    }
+```
+
+## Lab Extensions: 
+
+### Event handlers: [REST API](https://awslabs.github.io/aws-lambda-powertools-python/latest/core/event_handler/api_gateway/#api-gateway-decorator)
 
 In this lab we will introduce the REST Api Event Handler (ApiGatewayResolver) and see how it makes creating an API simple and easy.  We will explore the type hinting capability and showcase the core API utilities which make creating APIs simple and easy to work with.
 
@@ -191,12 +292,6 @@ This component tackles REST APIS for Amazon API Gateway REST/HTTP APIs and Appli
 
 If you are familiar with Flask then this will make you feel right at home.
 
-
-## Lab Extensions: 
-
-### [Event Source Data Classes](https://awslabs.github.io/aws-lambda-powertools-python/latest/utilities/data_classes/)
-
-Event Source data classes make working with Lambda events really simple.  Lets see how they can work for you to simplify and improve your developer experience.
 
 ### [Batch Processing](https://awslabs.github.io/aws-lambda-powertools-python/latest/utilities/batch/)
 
