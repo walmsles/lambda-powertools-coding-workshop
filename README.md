@@ -1,4 +1,4 @@
-# Introducing [Lambda Powertools for python](https://awslabs.github.io/aws-lambda-powertools-python/latest/)
+me# Introducing [Lambda Powertools for python](https://awslabs.github.io/aws-lambda-powertools-python/latest/)
 
 This repo contains documentation for a live coding workshop for the AWS Programminng and Tools Meetup in Melbourne.  The workshop will start with the SAM Cli "Hello World" example API project.  Throughout the labs we will introduce each of the AWS Lambda Powertools Core utilities to showcase how simple they are to use and adopt for all your projects, and how powerful they are at bringing you closer to the Well Architected Serverless Lens.
 
@@ -246,7 +246,7 @@ metrics = Metrics(namespace="AWSMeetup", service="HelloWorld")
 def lambda_handler(event, context):
     event = APIGatewayProxyEvent(event)
     
-    metrics.add_metric(name="HelloWorld", unit=MetricUnit.Count)
+    metrics.add_metric(name="HelloWorld", unit=MetricUnit.Count, value=1)
     tracer.put_annotation(key="HelloMeetup", value="SUCCESS") 
     return {
         "statusCode": 200,
@@ -278,7 +278,7 @@ metrics = Metrics()
 @tracer.capture_lambda_handler()
 @event_source(data_class=APIGatewayProxyEvent)
 def lambda_handler(event: APIGatewayProxyEvent, context):
-    metrics.add_metric(name="HelloWorld", unit=MetricUnit.Count)
+    metrics.add_metric(name="HelloWorld", unit=MetricUnit.Count, value=1)
     tracer.put_annotation(key="HelloMeetup", value="SUCCESS") 
     return {
         "statusCode": 200,
